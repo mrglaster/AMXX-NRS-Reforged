@@ -1,0 +1,180 @@
+[en]
+NRS_HUD_CONTROLL = Упраление НПЦ:^nХП: %i^nПатроны: %i^nРежим: %s^n(MOUSE2 - сменить)
+NRS_CONTROLL_MODE_1 = Авто-нападение
+NRS_CONTROLL_MODE_2 = Независимость
+NRS_CONTROLL_MODE_3 = Полный контроль
+NRS_CONTROLL_MODE_0 = -- / --
+
+NRS_BOSS_GAME_ONETIME_HELP = !gВертолёт можно вызвать только 1 раз!
+NRS_BOSS_GAME_VOTEHELP = !r%s !gвызывает !rВертолёт!y [ !r%i !y/ !g%i!y ] ( !g/helpme!y )
+NRS_BOSS_GAME_VOTEHELP_DONE !rВертолёт !gна подходе!
+
+NO_CLASSES_CREATED = !g%s !yThere is no npc registered!
+SHOP_TITLE_CREATOR = Create npc..
+NRS_NPC_INFO_SUMMONED = Health: %i
+
+NRS_BOSS_ROUND_INTRO = Внимание, начинается игра ВСЕ против ЗОМБИ!^nВыживите после атаки трёх волн зомби!^nДо начала %i (сек.)
+NRS_WAVE_REST = До новой волны осталось %i секунд(ы)^nОтдыхаем, закупаемся!
+NRS_BOSS_ROUND_HUD = Волна : %i^nДо новой волны %i ( %i заражено )^nПогода: %s
+NRS_BOSS_ROUND_HUD_EXTRA = Супер Волна!!!^nДо новой волны %i ( %i в запасе )^nПогода: %s
+NRS_WEATHER_NORMAL = Прохладно
+NRS_WEATHER_COLD = Снегопад
+NRS_WEATHER_RAINY = Проливной дождь
+NRS_WEATHER_SUNNY = Отличный денёк!
+NRS_BOSS_ROUND_WIN = !gНа этот раз Люди выжили..
+NRS_BOSS_WAR_WIN = !gСпасибо за игру! !yСмена карты..
+NRS_BOSS_WAR3_WIN = !gСпасибо за игру! !rВсем !g+%i !rопыта! !yСмена карты..
+NRS_NOT_ENOGH_PLAYERS = Недостаточно игроков для режима, смена карты!
+
+
+MENU_MAIN_TITLE = NPC mod management.
+MENU_MAIN_ITEM_SPAWNS = NPC Spawns
+MENU_MAIN_ITEM_WAYS = NPC Waypoints ( not working )
+MENU_MAIN_ITEM_BOXS = \d Not working
+
+
+MENU_SPAWNS_TITLE = Spawn menu | %i | %i |
+MENU_SPAWNS_ITEM_ADD = Create
+MENU_SPAWNS_ITEM_EDIT = Delete
+MENU_SPAWNS_ITEM_SAVE = Save
+MENU_SPAWNS_ITEM_LOAD = Load
+MENU_SPAWNS_ITEM_DEL = Delete
+
+MENU_SPAWNS_ADD_TITLE = Create spawn | %i | %i |
+MENU_SPAWNS_ADD_ITEM_ADD = Create NPC
+MENU_SPAWNS_ADD_ITEM_ADD_BOSS = Create BOSS
+MENU_SPAWNS_ADD_ITEM_DEL = Delete last spawn
+
+NOTICE_MAX_SPAWNS = The count of points is max ( %i )!
+NOTICE_SPAWNS_DIST = Bad spawn place!
+NOTICE_LOADSPAWN_COMPLETE = Loaded!
+NOTICE_SPAWNS_NOTVALUE = You have not created it yet!
+
+
+MENU_SPAWNS_EDIT_TITLE = Spawns edit
+MENU_SPAWNS_EDIT_ITEM_BACK = Back
+MENU_SPAWNS_EDIT_ITEM_NEXT = Next
+MENU_SPAWNS_EDIT_ITEM_EDIT = Edit
+MENU_SPAWNS_EDIT_ITEM_DEL = Delete
+NOTICE_SAVESPAWN_COMPLETE = Done!
+
+
+MENU_WAYS_TITLE = Управление вейпоинтами  | %i | %i |
+MENU_WAYS_ITEM_ADD = Добавить
+MENU_WAYS_ITEM_EDIT = Изменить
+MENU_WAYS_ITEM_SAVE = Сохранить
+MENU_WAYS_ITEM_LOAD = Загрузить
+MENU_WAYS_ITEM_DEL = Удалить
+NOTICE_MAX_WAYS = Слишком много путей!
+
+MENU_WAYS_ADD_TITLE = Добавление вейпоинтов  | %i | %i |
+MENU_WAYS_ADD_ITEM_ADD = Добавить
+MENU_WAYS_ADD_ITEM_DEL = Удалить
+MENU_WAYS_ADD_ITEM_DEL_ALL = Удалить ВСЕ
+MENU_WAYS_ADD_ITEM_SAVE = Сохранение
+
+MENU_WAYS_EDIT_ITEM_BACK = Предыдущий
+MENU_WAYS_EDIT_ITEM_NEXT = Следующий
+MENU_WAYS_EDIT_ITEM_EDIT = Изменить
+MENU_WAYS_EDIT_ITEM_DEL = Удалить
+
+MENU_POINTS_EDIT_TITLE = Изменение вейпоинтов
+MENU_POINTS_EDIT_ITEM_BACK = Назад
+MENU_POINTS_EDIT_ITEM_NEXT = Далее
+MENU_POINTS_EDIT_ITEM_EDIT = Изменить
+MENU_POINTS_EDIT_ITEM_DEL = Удалить
+MENU_POINTS_EDIT_ITEM_INSERT = Вставить
+NOTICE_WAYS_NOTVALUE = ВТФ, слишком много или нету!
+NOTICE_SAVEWAY_COMPLETE = Успешно сохранено!
+
+
+
+
+[ru]
+NRS_HUD_CONTROLL = Упраление НПЦ:^nХП: %i^nПатроны: %i^nРежим: %s^n(MOUSE2 - сменить)
+NRS_CONTROLL_MODE_1 = Авто-нападение
+NRS_CONTROLL_MODE_2 = Независимость
+NRS_CONTROLL_MODE_3 = Полный контроль
+NRS_CONTROLL_MODE_0 = -- / --
+
+NRS_BOSS_GAME_ONETIME_HELP = !gВертолёт можно вызвать только 1 раз!
+NRS_BOSS_GAME_VOTEHELP = !r%s !gвызывает !rВертолёт!y [ !r%i !y/ !g%i!y ] ( !g/helpme!y )
+NRS_BOSS_GAME_VOTEHELP_DONE !rВертолёт !gна подходе!
+
+NO_CLASSES_CREATED = !g%s !yНе создано ни одного класса!
+SHOP_TITLE_CREATOR = Создать нпц..
+NRS_NPC_INFO_SUMMONED = Здоровье: %i
+
+NRS_BOSS_ROUND_INTRO = Внимание, начинается игра ВСЕ против ЗОМБИ!^nВыживите после атаки трёх волн зомби!^nДо начала %i (сек.)
+NRS_WAVE_REST = До новой волны осталось %i секунд(ы)^nОтдыхаем, закупаемся!
+NRS_BOSS_ROUND_HUD = Волна : %i^nДо новой волны %i ( %i заражено )^nПогода: %s
+NRS_BOSS_ROUND_HUD_EXTRA = Супер Волна!!!^nДо новой волны %i ( %i в запасе )^nПогода: %s
+NRS_WEATHER_NORMAL = Прохладно
+NRS_WEATHER_COLD = Снегопад
+NRS_WEATHER_RAINY = Проливной дождь
+NRS_WEATHER_SUNNY = Отличный денёк!
+NRS_BOSS_ROUND_WIN = !gНа этот раз Люди выжили..
+NRS_BOSS_WAR_WIN = !gСпасибо за игру! !yСмена карты..
+NRS_BOSS_WAR3_WIN = !gСпасибо за игру! !rВсем !g+%i !rопыта! !yСмена карты..
+NRS_NOT_ENOGH_PLAYERS = Недостаточно игроков для режима, смена карты!
+
+
+MENU_MAIN_TITLE = Управление НПС модом.
+MENU_MAIN_ITEM_SPAWNS = Спавны НПС
+MENU_MAIN_ITEM_WAYS = Пути движения НПС
+MENU_MAIN_ITEM_BOXS = \d Не работает
+
+
+MENU_SPAWNS_TITLE = Управление спавнами LA2A | %i | %i |
+MENU_SPAWNS_ITEM_ADD = Добавить
+MENU_SPAWNS_ITEM_EDIT = Удалить
+MENU_SPAWNS_ITEM_SAVE = Сохранить
+MENU_SPAWNS_ITEM_LOAD = Загрузить
+MENU_SPAWNS_ITEM_DEL = Удалить
+
+MENU_SPAWNS_ADD_TITLE = Добавление Спавна | %i | %i |
+MENU_SPAWNS_ADD_ITEM_ADD = Добавить НПС
+MENU_SPAWNS_ADD_ITEM_ADD_BOSS = Добавить Ведьму
+MENU_SPAWNS_ADD_ITEM_DEL = Удалить НПС
+
+NOTICE_MAX_SPAWNS = Максимум спавнов ( %i )!
+NOTICE_SPAWNS_DIST = Плохой поинт!
+NOTICE_LOADSPAWN_COMPLETE = Успешно загружено!
+NOTICE_SPAWNS_NOTVALUE = Что-то не так с кол-вом спавнов!
+
+
+MENU_SPAWNS_EDIT_TITLE = Редактирование спавнов LA2A
+MENU_SPAWNS_EDIT_ITEM_BACK = Назад
+MENU_SPAWNS_EDIT_ITEM_NEXT = Далее
+MENU_SPAWNS_EDIT_ITEM_EDIT = Изменить
+MENU_SPAWNS_EDIT_ITEM_DEL = Удалить
+NOTICE_SAVESPAWN_COMPLETE = Успешно сохранено!
+
+
+MENU_WAYS_TITLE = Управление вейпоинтами  | %i | %i |
+MENU_WAYS_ITEM_ADD = Добавить
+MENU_WAYS_ITEM_EDIT = Изменить
+MENU_WAYS_ITEM_SAVE = Сохранить
+MENU_WAYS_ITEM_LOAD = Загрузить
+MENU_WAYS_ITEM_DEL = Удалить
+NOTICE_MAX_WAYS = Слишком много путей!
+
+MENU_WAYS_ADD_TITLE = Добавление вейпоинтов  | %i | %i |
+MENU_WAYS_ADD_ITEM_ADD = Добавить
+MENU_WAYS_ADD_ITEM_DEL = Удалить
+MENU_WAYS_ADD_ITEM_DEL_ALL = Удалить ВСЕ
+MENU_WAYS_ADD_ITEM_SAVE = Сохранение
+
+MENU_WAYS_EDIT_ITEM_BACK = Предыдущий
+MENU_WAYS_EDIT_ITEM_NEXT = Следующий
+MENU_WAYS_EDIT_ITEM_EDIT = Изменить
+MENU_WAYS_EDIT_ITEM_DEL = Удалить
+
+MENU_POINTS_EDIT_TITLE = Изменение вейпоинтов
+MENU_POINTS_EDIT_ITEM_BACK = Назад
+MENU_POINTS_EDIT_ITEM_NEXT = Далее
+MENU_POINTS_EDIT_ITEM_EDIT = Изменить
+MENU_POINTS_EDIT_ITEM_DEL = Удалить
+MENU_POINTS_EDIT_ITEM_INSERT = Вставить
+NOTICE_WAYS_NOTVALUE = ВТФ, слишком много или нету!
+NOTICE_SAVEWAY_COMPLETE = Успешно сохранено!
