@@ -6,17 +6,14 @@
 #include <fakemeta_util>
 #include <hamsandwich>
 #include <xs> 
-#include <dhudmessage>
+
 //#pragma dynamic 65536
 
 
 #define RADIANS_TO_DEGREES(%1) ((%1) * 57.29577951308232)
 #define SWITCH_METHOD_VER_ANG_THRESHOLD 30.0
 #define VER_HOR_ASPECT_RATIO 0.75
-//#define DEBUG 1
-#if defined DEBUG
-new Float:g_think_delay[33]
-#endif
+#define DEBUG 1
 
 
 #tryinclude "nrs_main.cfg"
@@ -24,7 +21,7 @@ new Float:g_think_delay[33]
 
 #define PLUGIN 							"NPC REGISTER SYSTEM : Public Edition"
 #define	TITLE							"[NRS]"
-#define VERSION 						"4.45"
+#define VERSION 						"4.41b"
 #define AUTHOR 							"Good_Hash"
 
 
@@ -84,16 +81,15 @@ stock spr_bomb, cache_laserbeam, gibtype
 new  bool:g_roundstarted, bool:g_roundended, bool:g_gamestarted, g_maxplayers, g_hamnpc, g_fwd_reset, g_fwd_npc_damage_start, g_fwd_npc_damage_delayed, g_fwd_death, g_fwd_hook_catched, g_fwd_missile_catched, g_fwd_casting_range, g_fwd_casting_outrange, g_fwd_npc_kills, g_fwd_npc_damage, g_fwd_initiation, g_fwd_gamestart, g_fwd_roundend, g_fwd_result, 
 	g_sprite, cache_blood, cache_bloodspray,
 	Float:g_fRemovecheck_timer, g_class_name[MAX_CLASSES+1][MAX_NPC], g_classcount, g_class_desc[MAX_CLASSES+1][MAX_NPC], g_class_pmodel[MAX_CLASSES+1][164], 
-	g_npc_ids[MAX_NPC], bool:g_npc_inattack[MAX_NPC], bool:g_valid_npc[MAX_NPC], g_npc_berserker[MAX_NPC], Float:g_npc_attack_delay[MAX_NPC], Float:g_class_data[MAX_CLASSES+1][MAX_DATA], bool:g_summoned_npc[MAX_NPC],
-	bool:g_ent_jumped[MAX_NPC]
+	g_npc_ids[MAX_NPC], bool:g_npc_inattack[MAX_NPC], bool:g_valid_npc[MAX_NPC], g_npc_berserker[MAX_NPC], Float:g_npc_attack_delay[MAX_NPC], Float:g_class_data[MAX_CLASSES+1][MAX_DATA], bool:g_summoned_npc[MAX_NPC]
     
 new g_Created_Npc = 0, g_To_Remove[MAX_NPC][2], g_Remover_Eng = 0, bool:g_disabled_Ent_Forwards, HamHook:g_entTrace, HamHook:g_entTakeDamage, HamHook:g_entThink, HamHook:g_entTouch,
 	/*Float:g_fGetWay[MAX_NPC][3],*/ g_Entity_HIT_PLACE[MAX_NPC][33], g_madness[MAX_NPC], g_class_id[MAX_NPC], Float:g_ent_events[MAX_NPC], g_think[MAX_NPC], npc_victim[MAX_NPC],
-	Float:g_think_jump_cd[MAX_NPC], Float:g_last_attack_reloadtime[MAX_NPC],  Float:g_last_jump_anim[MAX_NPC],
+	Float:g_Ent_Last_Origin[MAX_NPC][3], Float:g_last_attack_reloadtime[MAX_NPC],  Float:g_last_jump_anim[MAX_NPC],
 	g_owner[MAX_NPC], g_drag_i[MAX_NPC], g_hooked[MAX_NPC], bool:g_unable2move[MAX_NPC], bool:g_mage[MAX_NPC], bool:g_boss[MAX_NPC], 
 	npc_custom_enemy[MAX_NPC], Float:npc_custom_targets[MAX_NPC], Float:npc_custom_foes[MAX_NPC], npc_custom_animation[MAX_NPC], Float:npc_custom_move[MAX_NPC][3], Float:g_custommoving_speed[MAX_NPC]
     
-new Float:g_reach_point[MAX_NPC][3], Float:g_last_enemy_seek[MAX_NPC], Float:g_last_attack_time[MAX_NPC], Float:g_touch_cd[MAX_NPC], Float:npc_hudinfo_delay[33], Float:g_Last_Good_Z[MAX_NPC]
+new Float:g_reach_point[MAX_NPC][3], Float:g_last_enemy_seek[MAX_NPC], Float:g_last_attack_time[MAX_NPC], Float:g_touch_cd[MAX_NPC], Float:g_last_orig[MAX_NPC], Float:npc_hudinfo_delay[33], Float:g_Last_Good_Z[MAX_NPC]
 new gMsgScreenFade, g_SyncHUD[2], g_tv[33], g_tv_custom[MAX_NPC], camera[ 33 ], Float:g_tv_sleep_time[MAX_NPC], Float:g_control_hud[33], Float:g_SavedOrigin[33][3]
 new const g_camera_model[] =  "models/shell.mdl"
 
@@ -110,13 +106,9 @@ new Float:g_spawns[MAX_SPAWNS][3], g_total_spawns, Float:g_spawns_boss[MAX_SPAWN
 // Beta version, it can't be perfect, as I want =(
 /*const g_max_waypoints = 5000
 new g_got_ways = 0, g_waypoints = 0, g_done_waypoints[33], Float:g_Ways[33][g_max_waypoints][3], Float:way_delay[33], bool:g_way_founded[MAX_NPC], g_npc_way[MAX_NPC]*/
-#define max_way_points	100
-new Float:g_way_point[MAX_NPC][3], npc_way_target[MAX_NPC], g_way_counter[MAX_NPC], bool:g_way_jump_counter[MAX_NPC][max_way_points], g_way_point_index[MAX_NPC]
-new Float:point[MAX_NPC][max_way_points][3], last_npc_created, Float:extra = 0.15
-new const Float:MY_FOV = 30.0 // 60.0
-new const Float:MY_FOV_POWER = 35.0//35.0
-new const Float:MY_JUMP_POWER = 35.0
-new const MAX_CHECKS = 6
+#define max_way_points	12
+new Float:g_way_point[MAX_NPC][3], npc_way_target[MAX_NPC], g_way_counter[MAX_NPC], g_way_point_index[MAX_NPC]
+new Float:point[MAX_NPC][max_way_points][3], last_npc_created
 		
 
 // Including system..
@@ -141,7 +133,7 @@ new bool:NOT_BB = true, bool:z_okay, MAPS_COUNT = 0, MAP_LOAD_NAME[MAX_LOAD_MAPS
 
 // New damage delay
 #define UPDATE_TIME		0.1
-#define ENTITY_CLASS		"nrs_set_task"
+#define ENTITY_CLASS		"nrs_damage_delay"
 #define D_ent			0
 #define D_victim		1
 #define D_damage		2
@@ -153,7 +145,6 @@ new bool:NOT_BB = true, bool:z_okay, MAPS_COUNT = 0, MAP_LOAD_NAME[MAX_LOAD_MAPS
 #define D_ALL			8
 new g_THINKER_DELAY[MAX_NPC][D_ALL]
 
-new npc_user_victim[33], npc_user_attacker[33]
 
 public plugin_init()
 {
@@ -185,14 +176,10 @@ public plugin_init()
 	register_clcmd("say /tvtest",			"TV_test"								);
 	register_clcmd("say /tvstop",			"TV_stop"								);
 	//register_clcmd("say /tv",			"Watch_Zombie"								);
-	register_clcmd("say /debug",			"DEBUG_MODE"								);
 	//register_clcmd( "drop", 				"Got_Drop_Command"							);
 	
 	register_forward(FM_Touch, 			"bullet_touch"								);
 	register_forward(FM_TraceLine,			"traceline"		, 1						);
-	#if defined DEBUG
-	register_forward(FM_PlayerPreThink, "client_think") // debug only!
-	#endif
 	register_event("DeathMsg",			"hook_death"		,"a"						);
 	register_event("Damage" , 			"event_Damage" 		, "b" 			, "2>0"			);
 	register_logevent("logevent_round_start", 2, "1=Round_Start")
@@ -211,7 +198,7 @@ public plugin_init()
 	g_fwd_hook_catched = CreateMultiForward("event_hook_catch", ET_IGNORE, FP_CELL, FP_CELL, FP_FLOAT)
 	g_fwd_casting_outrange = CreateMultiForward("event_npc_casting_outrange", ET_IGNORE, FP_CELL)
 	g_fwd_npc_damage = CreateMultiForward("event_npc_damage", ET_IGNORE, FP_CELL, FP_CELL, FP_FLOAT)
-	g_fwd_npc_damage_start = CreateMultiForward("event_npc_damage_start", ET_CONTINUE, FP_CELL)
+	g_fwd_npc_damage_start = CreateMultiForward("event_npc_damage_start", ET_IGNORE, FP_CELL)
 	g_fwd_npc_damage_delayed = CreateMultiForward("event_npc_damage_delayed", ET_IGNORE, FP_CELL)
 	g_fwd_gamestart = CreateMultiForward("event_gamestarted", ET_IGNORE)
 	g_fwd_roundend = CreateMultiForward("event_round_ended", ET_IGNORE)
@@ -255,71 +242,6 @@ public plugin_init()
 		
 	set_task(5.0, "check_ent_destroy")
 }
-
-public DEBUG_MODE(id)
-{
-	if ( is_user_admin(id) )
-		set_pev(id, pev_maxspeed, 1000.0)
-}
-	
-#if defined DEBUG
-public client_think(id)
-{
-	if ( g_think_delay[id] <= get_gametime() )
-	{
-		if ( is_user_alive(id) )
-		{
-			new Float:fOrigin[3], Float:OriginAngle[3], Float:hitOrigin[3], Float:origin2[3], hitent, Float:got_distance
-			
-			pev(id, pev_origin, fOrigin)
-			pev(id, pev_angles, OriginAngle)//entity_get_vector(id,EV_VEC_v_angle,OriginAngle)
-			origin2[0] = fOrigin[0] + (floatcos(OriginAngle[1] + MY_FOV, degrees) * MY_FOV_POWER); 
-			origin2[1] = fOrigin[1] + (floatsin(OriginAngle[1] + MY_FOV, degrees) * MY_FOV_POWER); 
-			origin2[2] = fOrigin[2]// + (floatsin(-OriginAngle[0] + MY_FOV, degrees) * 38.0); 
-			hitent = trace_line(id, fOrigin, origin2, hitOrigin) 
-			got_distance = vector_distance(fOrigin, hitOrigin)
-						
-			if ( hitent || got_distance <= MY_FOV_POWER)
-				Create_TE_BEAMPOINTS(fOrigin, origin2, g_sprite, 0, 0, 1, 15, 0, 255, 0, 0, 255, 0)
-			else 
-				Create_TE_BEAMPOINTS(fOrigin, origin2, g_sprite, 0, 0, 1, 15, 0, 0, 255, 0, 255, 0)
-						
-			origin2[0] = fOrigin[0] + (floatcos(OriginAngle[1] - MY_FOV, degrees) * MY_FOV_POWER); 
-			origin2[1] = fOrigin[1] + (floatsin(OriginAngle[1] -MY_FOV, degrees) *  MY_FOV_POWER); 
-			origin2[2] = fOrigin[2]// + (floatsin(-OriginAngle[0] - MY_FOV, degrees) * 38.0); 
-			hitent = trace_line(id, fOrigin, origin2, hitOrigin) 
-			got_distance = vector_distance(fOrigin, hitOrigin)
-			if ( hitent || got_distance <= MY_FOV_POWER)
-				Create_TE_BEAMPOINTS(fOrigin, origin2, g_sprite, 0, 0, 1, 15, 0, 255, 0, 0, 255, 0)
-			else 
-				Create_TE_BEAMPOINTS(fOrigin, origin2, g_sprite, 0, 0, 1, 15, 0, 0, 255, 0, 255, 0)
-			
-			new Float:fOriginJump[3]
-			fOriginJump = fOrigin
-			fOriginJump[2] -= 38.0
-			origin2[0] = fOriginJump[0] + (floatcos(OriginAngle[1], degrees) * MY_JUMP_POWER); 
-			origin2[1] = fOriginJump[1] + (floatsin(OriginAngle[1], degrees) *  MY_JUMP_POWER); 
-			origin2[2] = fOriginJump[2] + (floatsin(-OriginAngle[0], degrees) *  MY_JUMP_POWER); 
-			hitent = trace_line(id, fOrigin, origin2, hitOrigin) 
-			if ( vector_distance(origin2, hitOrigin)<21.0)
-			{
-				Create_TE_BEAMPOINTS(fOriginJump, hitOrigin, g_sprite, 0, 0, 1, 15, 0, 255, 255, 0, 255, 0)
-				set_hudmessage(0, 255, 0, -0.2, -1.0,_,0.99, 0.99, _,_,-1)
-				show_hudmessage(id, "My Origin: %i %i %i^nJump (%s): %i", floatround(fOrigin[0]),floatround(fOrigin[1]), floatround(fOrigin[2]),
-				"Y", floatround(vector_distance(origin2, hitOrigin)))
-			}
-			else
-			{
-				Create_TE_BEAMPOINTS(fOriginJump, hitOrigin, g_sprite, 0, 0, 1, 15, 0, 255, 0, 0, 255, 0)
-				set_hudmessage(0, 255, 0, -0.2, -1.0,_,0.99, 0.99, _,_,-1)
-				show_hudmessage(id, "My Origin: %i %i %i^nJump (%s): %i", floatround(fOrigin[0]),floatround(fOrigin[1]), floatround(fOrigin[2]),
-				"N", floatround(vector_distance(origin2, hitOrigin)))
-			}
-		}
-		g_think_delay[id] = get_gametime()+1.0
-	}
-}
-#endif
 
 
 public checkTimeleft( ) 
@@ -491,10 +413,7 @@ stock FindNPC(id, start = 0)
 }
 
 public client_connect(id)
-{
 	g_tv[id] = 0
-	npc_user_victim[id] = npc_user_attacker[id] = 1
-}
 
 
 	
@@ -1048,12 +967,11 @@ stock Search_Way(ent, Float:target[3])
 
 	g_way_counter[ent] = 0
 	pev(ent, pev_origin, npc_origin)
-	//A_star_pathfinder(ent, npc_origin, target)
+	A_star_pathfinder(ent, npc_origin, target, point[ent])
 	
 	if ( g_way_counter[ent] < 1 )
 		return
-	
-	g_last_enemy_seek[ent] =get_gametime()+1.5
+		
 	g_way_point[ent] = point[ent][0]
 	g_way_point_index[ent] = 1
 }
@@ -1072,78 +990,14 @@ stock is_waymove_complete(ent, Float:npc_origin[3], Float:point[][3])
 	return 0
 }
 
-is_move_complete(Float:ent_origin[3], Float:point_origin[3])
+stock is_move_complete(Float:ent_origin[3], Float:point_origin[3])
 {
-	ent_origin[2] = point_origin[2] = 0.0
+	//ent_origin[2] = point_origin[2] = 0.0
 	// check dist
-	
 	if (vector_distance(ent_origin, point_origin)<=100.0 /*|| !get_can_see(ent_origin, point_origin)*/) return 1
 	
 	return 0
 }
-
-stock NRS_is_move_complete(ent, Float:point_origin[3])
-{
-	
-	new Float:ent_origin[3], i, gindex = 0
-	pev(ent, pev_origin, ent_origin)
-		
-	if ( vector_distance(point_origin, ent_origin)  <= 1.850*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX] ) 
-	{
-		// Delete used coord!
-		for ( i = g_way_point_index[ent]; i < g_way_counter[ent]; i++ )
-		{
-			gindex++
-			point[ent][gindex] = point[ent][i+1]
-		}
-		g_way_counter[ent] = gindex
-		
-		return 1
-	}
-	
-	return 0
-	
-	/*new Float:ent_origin[3], new_dist_id = 0, Float:min_dist = 9999.9
-	pev(ent, pev_origin, ent_origin)
-	
-	new Float:dist = vector_distance(ent_origin, point_origin);
-	
-	#if defined DEBUG
-	set_hudmessage(0, 0, 255, -0.15, -1.0, _,0.9,0.9,_,_,-1)
-	show_hudmessage(0, "DEBUG : is_move_complete :^n   Distance = %i from %i", floatround(dist), floatround(1.844*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX]))
-	#endif
-	
-	if ( dist <= 1.850*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX] ) return 1
-	
-	min_dist = dist
-	
-	for ( new i = g_way_point_index[ent]; i < g_way_counter[ent]; i++ )
-	{
-		dist = vector_distance(point[ent][i], target);
-		if ( min_dist>= dist ) 
-		{
-			//booly = true
-			min_dist = dist
-			new_dist_id = i;
-		}
-	}
-	if ( new_dist_id ) 
-	{
-		if ( g_way_point_index[ent] < new_dist_id )
-		{
-			g_way_point_index[ent] = new_dist_id
-			if ( min_dist <= 1.850*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX] ) return 1
-		}
-	}
-	else
-	{
-		dist = vector_distance(ent_origin, target);
-		if ( min_dist >= dist ) NRS_get_next_point(ent, target)
-	}
-	
-	return 0*/
-}
-
 
 stock get_point(ent, Float:point[3])
 {
@@ -1286,8 +1140,6 @@ public plugin_natives()
 	register_library("npc_register_system")
 	//register_native("l4d_class_tank_set", "native_infection_tank", 1)
 	//register_native("l4d_class_tank_get", "native_is_infection_tank", 1)
-	register_native("nrs_user_victim", "native_nrs_user_victim", 1)
-	register_native("nrs_user_attacker", "native_nrs_user_attacker", 1)
 	
 	register_native("register_npc", "native_register_npc", 1)
 	register_native("create_npc", "native_create_npc", 1);
@@ -1451,12 +1303,6 @@ public native_set_npc_targets(ent, Float:value)
 public native_set_npc_foes(ent, Float:value)
 	npc_custom_foes[ent] = value
 
-public native_nrs_user_victim(id, value)
-	npc_user_victim[id] = value
-public native_nrs_user_attacker(id, value)
-	npc_user_attacker[id] = value
-	
-	
 public native_npc_set_anim(ent, value, Float:lenght)
 {
 	npc_custom_animation[ent] = value
@@ -1550,11 +1396,10 @@ public plugin_precache()
 	
 	load_spawn_points();
 	
-	new i, mdl_index
+	new i
 	for(i = 0; i < g_classcount; i++)
 	{
-		mdl_index = engfunc(EngFunc_PrecacheModel, g_class_pmodel[i])
-		set_pdata_int(0, 491, mdl_index, 5) 
+		engfunc(EngFunc_PrecacheModel, g_class_pmodel[i])
 	}
 	for(i = 0; i < sizeof(bullet_gib); i++)
 		engfunc(EngFunc_PrecacheSound, bullet_gib[i])	
@@ -2319,16 +2164,13 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type)
 	}
 	
 	
-		
+	
 	new bool:alive_attacker = true
 	
 	if ( !is_user_alive(attacker) )
 		alive_attacker = false
 	
-	if ( alive_attacker && !npc_user_attacker[attacker] )
-		return HAM_SUPERCEDE
-		
-		
+	
 	// fix hit body damage
 	if (damage_type & DMG_BULLET)
 	{
@@ -2451,11 +2293,11 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type)
 	}
 	else
 	{
-		/*g_last_enemy_seek[victim] = 0.0;
+		g_last_enemy_seek[victim] = 0.0;
 		new parm[3];
 		parm[0] = victim;
 		parm[1] = attacker;
-		//NPC_return_target(parm);*/
+		//NPC_return_target(parm);
 	}
 	
 	return HAM_IGNORED
@@ -2806,7 +2648,7 @@ stock NRS_Agression_Loop ( ent , distanced = 0 )
 	
 	if ( distanced )
 	{
-		if(victim != 0 && get_can_see(Origin, VicOrigin))
+		if(victim != 0 && get_can_see(Origin, VicOrigin)/*can_see_fm(ent, victim)*/)
 		{
 			if ( g_class_data[g_class_id[ent]][DATA_WEAPON_TYPE] > WEAPON_KNIFE )
 			{
@@ -2818,7 +2660,7 @@ stock NRS_Agression_Loop ( ent , distanced = 0 )
 		}
 		else
 			if ( !g_tv_custom[ent] )
-				{}
+				{}//Search_Way(ent)
 		return
 	}
 	
@@ -2832,6 +2674,7 @@ stock NRS_Agression_Loop ( ent , distanced = 0 )
 		if ( g_last_enemy_seek[ent] < get_gametime() ) 
 		{
 			Search_Way(ent, VicOrigin)
+			g_last_enemy_seek[ent] =get_gametime()+random_float(0.9, 1.5);
 		}
 		
 		if(distance <= g_class_data[g_class_id[ent]][DATA_ATTACK_DISTANCE])
@@ -2854,34 +2697,25 @@ stock NRS_Agression_Loop ( ent , distanced = 0 )
 				ftime = g_class_data[g_class_id[ent]][DATA_ATTACK_WAITTIME];
 			g_tv_sleep_time[ent] = get_gametime() + ftime
 			entity_set_float( ent, EV_FL_nextthink, g_last_attack_reloadtime[ent] )
-		}
+			//entity_set_float(ent, EV_FL_nextthink, get_gametime() + 0.1);
+		} 
 		else 
 		{
-			entity_set_float(ent, EV_FL_nextthink, get_gametime() + 0.15)
-			if ( g_touch_cd[ent] < get_gametime() && g_think_jump_cd[ent] < get_gametime()  )
-			{
-				new Float:OriginAngle[3], Float:hitOrigin[3], Float:origin2[3], Float:got_distance
-				new Float:NEED_DIST = vector_distance(Origin, point[ent][g_way_point_index[ent]]);
-				pev(ent, pev_angles, OriginAngle)
-				origin2[0] = Origin[0] + (floatcos(OriginAngle[1] + MY_FOV, degrees) * NEED_DIST); 
-				origin2[1] = Origin[1] + (floatsin(OriginAngle[1] + MY_FOV, degrees) * NEED_DIST); 
-				origin2[2] = Origin[2]
-				trace_line(ent, Origin, origin2, hitOrigin) 
-				got_distance = vector_distance(Origin, hitOrigin)
-				
-				
-				if ( got_distance < NEED_DIST/*MY_FOV_POWER*/)
-				{
-					g_last_jump_anim[ent] = get_gametime() + 0.55
-				}
-				
-				g_think_jump_cd[ent] = get_gametime() + 2.0
-			}
+			entity_set_float(ent, EV_FL_nextthink, get_gametime() + 0.15)//0.05
+			//Search_Way(ent)
 		}
+		
 		npc_move(ent, Origin, VicOrigin)
 	} 
 	else
 	{	
+		/*if ( !g_tv_custom[ent] )
+		{
+			VicOrigin[0] = random_float(0.0, 5000.0)
+			VicOrigin[1] = random_float(0.0, 5000.0)
+			VicOrigin[2] = 0.0
+			Search_Way(ent, VicOrigin)
+		}*/
 		NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_ANI_IDLE]))
 	}
 }
@@ -2889,7 +2723,7 @@ stock NRS_Agression_Loop ( ent , distanced = 0 )
 
 Check_Forward_Attack(ent, Float:entOrigin[3], Float:victimOrigin[3], Float:distance)
 {
-	if(get_can_see(entOrigin, victimOrigin) && distance <= 1.5*g_class_data[g_class_id[ent]][DATA_ATTACK_DISTANCE])
+	if(get_can_see(entOrigin, victimOrigin) && distance <= 2*g_class_data[g_class_id[ent]][DATA_ATTACK_DISTANCE])
 		return true
 	return false
 }
@@ -3007,6 +2841,68 @@ stock NRS_FollowCreator ( ent )
 		//Search_Way(ent)
 	}
 }
+
+
+/* Addition by VEH
+stock bool:fm_is_in_viewcone3d(index, const Float:point[3]) {
+	new Float:v_origin[3], Float:angle_to_point[3]
+	pev(index, pev_origin, v_origin)
+	pev(index, pev_view_ofs, angle_to_point)
+	xs_vec_add(v_origin, angle_to_point, v_origin)
+	xs_vec_sub(point, v_origin, angle_to_point)
+
+	new Float:norm[3]
+	xs_vec_normalize(angle_to_point, norm)
+
+	engfunc(EngFunc_VecToAngles, angle_to_point, angle_to_point)
+	fm_norm_angle(angle_to_point)
+
+	new Float:v_angle[3]
+	pev(index, pev_v_angle, v_angle)
+
+	new Float:a
+	pev(index, pev_fov, a)
+	a *= 0.5
+
+	if (floatabs(angle_to_point[0]) < SWITCH_METHOD_VER_ANG_THRESHOLD) {
+		fm_norm_v_angle(v_angle)
+		fm_norm_angle(v_angle)
+
+		if (!(v_angle[1] - a <= angle_to_point[1] <= v_angle[1] + a))
+			return false
+
+		new Float:b = RADIANS_TO_DEGREES(floatatan(floattan(a, degrees) * VER_HOR_ASPECT_RATIO, _:radian))
+		if (!(v_angle[0] - b <= angle_to_point[0] <= v_angle[0] + b))
+			return false
+
+		return true
+	}
+
+	engfunc(EngFunc_MakeVectors, v_angle)
+	global_get(glb_v_forward, v_angle)
+	if (xs_vec_dot(norm, v_angle) < floatcos(a * M_PI / 180.0))
+		return false
+
+	return true
+}
+// fits angle with range from 0 to 360 in range from -180 to 180
+stock fm_norm_angle(Float:angle[3]) {
+	if (angle[0] > 180.0)
+		angle[0] -= 360.0
+	if (angle[1] > 180.0)
+		angle[1] -= 360.0
+}
+// standartize v_angle according to VecToAngles angle system
+stock fm_norm_v_angle(Float:v_angle[3]) {
+	v_angle[0] *= -1.0
+	v_angle[0] -= floatround(v_angle[0] / 360.0, floatround_floor) * 360.0
+	v_angle[1] -= floatround(v_angle[1] / 360.0, floatround_floor) * 360.0
+	if (v_angle[0] < 0.0)
+		v_angle[0] += 360.0
+	if (v_angle[1] < 0.0)
+		v_angle[1] += 360.0
+}*/
+
 
 
 public witch_attack_environmental(ent, wall)
@@ -3323,6 +3219,7 @@ stock NRS_WakeUp(ent)
 	}
 }
 
+
 public NRS_WakeUp_Time(ent)
 {
 	ent -= TASK_WAKEUP;
@@ -3357,9 +3254,9 @@ FindVictim(ent)
 	{
 		for( new client = 1; client <= 33; client++ ) 
 		{ 
-			if ( !check_targets(ent, victim) )	continue;
-			if ( !is_user_alive(client) )	continue; 
-			if ( !npc_user_victim[client] )	continue;
+			if ( !check_targets(ent, victim) ) continue;
+			if ( !is_user_alive(client) )	 continue; 
+			
 			if ( g_custom_npc[ent] == CUSTOM_HOTSEEK && !fm_is_ent_visible(client, ent))continue
 			//if ( !fm_is_ent_visible(ent, client) ) continue; 
 				
@@ -3471,11 +3368,10 @@ public fw_touch(witch, id)
 		return HAM_IGNORED
 	if ( g_ent_events[witch]==EVENT_CUSTOM )
 		return HAM_IGNORED
-	
+		
 	if ( g_touch_cd[witch] < get_gametime() )
 	{
 		g_touch_cd[witch] = get_gametime() + 0.5
-		//g_way_counter[witch] = 0;
 	}else return HAM_IGNORED
 	
 	if(!NOT_BB && !is_user_connected(id))
@@ -3497,16 +3393,11 @@ public fw_touch(witch, id)
 	
 	if(g_think[witch] == THINK_DEATH )
 		return HAM_IGNORED
-		
-	if ( !is_user_connected(id) ) g_last_enemy_seek[witch] =get_gametime()+0.7
 	
 	if ( !check_targets(witch, id) )
 		return HAM_IGNORED
 	
 	if ( g_custom_npc[witch] > CUSTOM_OFF )
-		return HAM_IGNORED
-		
-	if ( is_user_alive(id) && !npc_user_victim[id] )
 		return HAM_IGNORED
 		
 	witch_attack(witch, id)
@@ -3520,37 +3411,21 @@ npc_move(ent, Float:npc_origin[3], Float:target[3])
 {
 	// move
 	ent_move_to(ent, npc_origin, target)
-	
-	if (g_npc_inattack[ent] || g_ent_events[ent] == EVENT_SHOOTER)
-	{
-		//client_print(0, print_chat, "DEBUG: G_NPC_INATTACK(%s)", g_npc_inattack[ent] ? "Y" : "N")
-		return
-	}
-	if ( g_tv_sleep_time[ent] >= get_gametime() )
-	{
-		//client_print(0, print_chat, "DEBUG: g_tv_sleep_time(%s)", (g_tv_sleep_time[ent] >= get_gametime()) ? "Y" : "N")
-		return
-	}
-	if ( g_custom_npc[ent] != CUSTOM_OFF )
-	{
-		//client_print(0, print_chat, "DEBUG: g_custom_npc = CUSTOM_OFF (%s)", g_custom_npc[ent] == CUSTOM_OFF ? "Y" : "N")
-		return
-	}
-		
-	if ( g_ent_events[ent] == EVENT_AGRESSION || g_ent_events[ent] == EVENT_SHOOTER )
-	{
-		if  (g_npc_berserker[ent])
-			NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_MADANI_RUN]) );
+	if ( (!g_npc_inattack[ent] && g_ent_events[ent] != EVENT_SHOOTER ) && g_custom_npc[ent] == CUSTOM_OFF )
+		if ( g_ent_events[ent] == EVENT_AGRESSION || g_ent_events[ent] == EVENT_SHOOTER )
+		{
+			if  (g_npc_berserker[ent])
+				NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_MADANI_RUN]) );
+			else
+				NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_ANI_RUN]) );
+		}
 		else
-			NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_ANI_RUN]) );
-	}
-	else
-	{	
-		if  (g_npc_berserker[ent])
-			NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_MADANI_WALK]) );
-		else
-			NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_ANI_WALK]) );
-	}
+		{	
+			if  (g_npc_berserker[ent])
+				NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_MADANI_WALK]) );
+			else
+				NRS_set_animation(ent, floatround(g_class_data[g_class_id[ent]][DATA_ANI_WALK]) );
+		}
 }
 
 
@@ -3723,56 +3598,52 @@ public noTarget(ent) // set beam if target isn't playger
 
 stock ent_move_to(ent, Float:ent_origin[3], Float:target[3])
 {
-	if (g_way_counter[ent]<1)
+	/*// turn to target
+	new Float:angle[3]
+	aim_at_origin( ent_origin, target, angle)
+	
+	if ( g_class_data[g_class_id[ent]][DATA_MATERIAL] != MATERIAL_BODY )
+	{}
+	else
+		angle[0] = 0.0
+	*/
+	
+	
+	if (!g_way_point_index[ent])
 	{
 		Search_Way(ent, target)
 	}
-	
+
 	// turn to target
 	new Float:angle[3]
-	aim_at_origin(  ent_origin, g_way_point[ent], angle)
+	aim_at_origin( ent_origin, g_way_point[ent], angle)
 		
 	if ( g_class_data[g_class_id[ent]][DATA_MATERIAL] != MATERIAL_BODY  || g_custom_npc[ent] == CUSTOM_HOTSEEK )
 	{}
 	else
 		angle[0] = 0.0
 	entity_set_vector(ent, EV_VEC_angles, angle)
-	
-	if (  !NRS_is_move_complete(ent, g_way_point[ent])  || g_last_jump_anim[ent] >= get_gametime())
+
+	if (  !is_move_complete(ent_origin, g_way_point[ent])  )
 	{
-		if ( g_last_jump_anim[ent] >= get_gametime() || !(pev(ent,pev_flags)&FL_ONGROUND) )
-			set_coord_velocity(ent, angle, ent_origin, target)
-		else
-			set_coord_velocity(ent, angle, ent_origin, g_way_point[ent])
-		#if defined DEBUG
-			client_print(0, print_center, "way index: %i. ( %i )", g_way_point_index[ent], g_way_counter[ent])
-		#endif
+		set_coord_velocity(ent, angle, ent_origin, g_way_point[ent])//npc_move(ent, npc_origin, g_way_point[ent])
 	}
 	else
 	{
-		NRS_get_next_point(ent, target)
-		#if defined DEBUG
-			client_print(0, print_center, "Changing way index: %i. ( %i )", g_way_point_index[ent], g_way_counter[ent])
-		#endif
-	}
-}
-
-
-stock NRS_get_next_point(ent, Float:target[3])
-{
-	if ( g_way_counter[ent] ) 
-	{
 		g_way_point_index[ent]++
-		if ( g_way_counter[ent] > g_way_point_index[ent] )
+		if ( g_way_counter[ent] >= g_way_point_index[ent] )
 		{
 			g_way_point[ent] = point[ent][g_way_point_index[ent]]
 		}
+		else
+		{
+			Search_Way(ent, target)
+			g_way_point_index[ent] = 0
+			g_way_point[ent] = point[ent][g_way_point_index[ent]]
+		}	
 	}
-	else
-		Search_Way(ent, target)
+	//set_coord_velocity(ent, angle, ent_origin, g_way_point[ent]/*target*/)
 }
-
-
 bool:is_point_visible(const Float:start[3], const Float:point[3], ignore_ent)
 {
     engfunc(EngFunc_TraceLine, start, point, IGNORE_GLASS | IGNORE_MONSTERS, ignore_ent, 0)
@@ -3844,39 +3715,29 @@ stock ent_aim_at(ent, Float:ent_origin[3], Float:target[3])
 
 stock aim_at_origin( Float:vec[3], Float:target[3], Float:angles[3])
 {
-	new Float:tempUnit[3]
-	tempUnit = vec;
-	tempUnit[0] = target[0] - tempUnit[0]
-	tempUnit[1] = target[1] - tempUnit[1]
-	tempUnit[2] = target[2] - tempUnit[2]
-	engfunc(EngFunc_VecToAngles,tempUnit,angles)
+	vec[0] = target[0] - vec[0]
+	vec[1] = target[1] - vec[1]
+	vec[2] = target[2] - vec[2]
+	engfunc(EngFunc_VecToAngles,vec,angles)
 	angles[0] *= -1.0, angles[2] = 0.0
 }
 
 
-stock ent_jump_to(ent, Float:ent_origin[3], Float:target[3], Float:speed) // STIL interesting!
+stock ent_jump_to(ent, Float:target[3], speed) // SIL interesting!
 {
-	/*if ( vector_distance(ent_origin,target)  >= 0.7*g_class_data[g_class_id[ent]][DATA_ATTACK_DISTANCE]  || g_custom_npc[ent] == CUSTOM_HOTSEEK )   
-	{
-		g_last_jump_anim[ent] = 0.0
-		return
-	}*/
-		
-	static Float:vec[3]
-	aim_at_origin(ent_origin, target, vec)
-	engfunc(EngFunc_MakeVectors, vec)
-	global_get(glb_v_forward, vec)
-	vec[0] *= speed
-	vec[1] *= speed
-	vec[2] = vec[2] < 1.0 ? 50.0 : vec[2]
-	vec[2] *= speed * 2.0
-	if ( vec[2] > 100.0 ) vec[2] = 50.0
-	set_pev(ent, pev_velocity, vec)
+    static Float:vec[3]
+    aim_at_origin(ent, target, vec)
+    engfunc(EngFunc_MakeVectors, vec)
+    global_get(glb_v_forward, vec)
+    vec[0] *= speed
+    vec[1] *= speed
+    vec[2] *= speed * 0.1
+    set_pev(ent, pev_velocity, vec)
         
-	new Float:angle[3]
-	aim_at_origin(ent_origin, target, angle)
-	angle[0] = 0.0
-	entity_set_vector(ent, EV_VEC_angles, angle)
+    new Float:angle[3]
+    aim_at_origin(ent, target, angle)
+    angle[0] = 0.0
+    entity_set_vector(ent, EV_VEC_angles, angle)
     
 }
 
@@ -3903,7 +3764,7 @@ stock ent_custom_move_to(ent, Float:Speed, Float:fOrigin[3], Float:target[3]) //
 	
 	// turn to target
 	new Float:angle[3]
-	aim_at_origin(  fOrigin, target, angle)
+	aim_at_origin( fOrigin, target, angle)
 		
 	if ( g_class_data[g_class_id[ent]][DATA_MATERIAL] != MATERIAL_BODY  || g_custom_npc[ent] == CUSTOM_HOTSEEK )
 	{}
@@ -3915,13 +3776,6 @@ stock ent_custom_move_to(ent, Float:Speed, Float:fOrigin[3], Float:target[3]) //
 	angle_vector(angle, ANGLEVECTOR_FORWARD, Direction);	
 	xs_vec_mul_scalar(Direction, Speed, Direction)
 	set_pev(ent, pev_velocity, Direction)
-}
-
-
-stock nrs_jump_direction(Float:Direction2[3], Float:angle[3])
-{
-	angle_vector(angle, ANGLEVECTOR_UP, Direction2);
-	xs_vec_mul_scalar(Direction2, 160.0, Direction2)
 }
 
 
@@ -3945,15 +3799,6 @@ set_coord_velocity(ent, Float:angle[3], Float:Torigin[3], Float:got_origin[3]) /
 			speed *= 1.5;
 	}
 		
-	if ( g_way_jump_counter[ent][g_way_point_index[ent]]  )
-	{
-		//client_print(0, print_center, "JUMP")
-		//Create_TE_BEAMPOINTS(Torigin, got_origin, g_sprite, 0, 0, 1, 15, 0, 255, 255, 0, 255, 0)
-		//ent_jump_to(ent, Torigin, got_origin, speed)
-		g_last_jump_anim[ent] = get_gametime() + 1.0
-		//return
-	}
-		
 	xs_vec_mul_scalar(Direction, speed, Direction)
 
 	
@@ -3973,42 +3818,19 @@ set_coord_velocity(ent, Float:angle[3], Float:Torigin[3], Float:got_origin[3]) /
 	if ( !(pev(ent,pev_flags)&FL_ONGROUND) &&  g_last_jump_anim[ent] < get_gametime() )
 		walk = false
 		
-	/*if (walk && g_last_jump_anim[ent] < get_gametime())
+	if (walk )
 	{
-		new Float:jumpOriginENT[3], Float:jumpOriginTARGET[3], Float:hitOrigin[3]
-		jumpOriginENT = Torigin; 
-		jumpOriginENT[0] = Torigin[0] + (floatcos(angle[1], degrees) * MY_JUMP_POWER); 
-		jumpOriginENT[1] = Torigin[1] + (floatsin(angle[1], degrees) * MY_JUMP_POWER); 
-		jumpOriginENT[2] -= 20.0;
-		jumpOriginTARGET = got_origin; jumpOriginTARGET[2] = jumpOriginENT[2]
-		trace_line(ent, jumpOriginENT, jumpOriginTARGET, hitOrigin)
-		distance = vector_distance(jumpOriginENT, hitOrigin)
-		//client_print(0, print_center, "JUMPER: %i/%i", floatround(distance), floatround(g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX]*0.01*250.5))
-		if ( distance && distance <=g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX]*0.01*187.5 )//250.0
-		{ 
-			new Float:Direction2[3]
-			nrs_jump_direction(Direction2, angle)
-			g_last_jump_anim[ent] = get_gametime() + 1.5
-			Direction[2] += Direction2[2]
-			
-			#if defined DEBUG
-				Create_TE_BEAMPOINTS(jumpOriginENT, hitOrigin, g_sprite, 0, 0, 2, 35, 0, 255, 50, 0, 255, 0)
-			#endif
-		}else
+		distance = vector_distance(Torigin, g_Ent_Last_Origin[ent])
+		
+		if ( distance <= ( (g_class_data[g_class_id[ent]][DATA_SPEED]*0.05))  && g_last_jump_anim[ent] < get_gametime())
 		{
-			#if defined DEBUG
-				Create_TE_BEAMPOINTS(jumpOriginENT, hitOrigin, g_sprite, 0, 0, 2, 35, 0, 50, 255, 0, 255, 0)
-			#endif
+			new Float:Direction2[3]
+			angle_vector(angle, ANGLEVECTOR_UP, Direction2);
+			xs_vec_mul_scalar(Direction2, 450.0, Direction2)
+			g_last_jump_anim[ent] = get_gametime() + 0.4
+			Direction[2] += Direction2[2]
 		}
-	}*/
-	/*new Float:distance, Float:OriginAngle[3], Float:fOriginJump[3], Float:origin2[3], Float:hitOrigin[3]
-		pev(ent, pev_angles, OriginAngle)
-		fOriginJump = Torigin
-		//fOriginJump[2] -= 25.0
-		origin2[0] = fOriginJump[0] + (floatcos(OriginAngle[1], degrees) * MY_JUMP_POWER); 
-		origin2[1] = fOriginJump[1] + (floatsin(OriginAngle[1], degrees) *  MY_JUMP_POWER); 
-		origin2[2] = fOriginJump[2] + (floatsin(-OriginAngle[0], degrees) *  MY_JUMP_POWER); 
-		trace_line(ent, fOriginJump, origin2, hitOrigin) */
+	} 
 	
 	
 	new bool:is_flying = false
@@ -4074,17 +3896,17 @@ set_coord_velocity(ent, Float:angle[3], Float:Torigin[3], Float:got_origin[3]) /
 	
 	if ( walk || ( g_custom_npc[ent] == CUSTOM_HOTSEEK ) || g_last_jump_anim[ent] >= get_gametime())   
 	{
-		if ( g_last_jump_anim[ent] >= get_gametime() )
-		{
-			new Float:Direction2[3]
-			nrs_jump_direction(Direction2, angle)
-			Direction[2] += Direction2[2]
-			g_ent_jumped[ent] = true
-		}
-		else if ( g_ent_jumped[ent] ) g_way_counter[ent] = 0
 		set_pev(ent, pev_velocity, Direction)
 	}
+	
+	if ( g_custom_npc[ent] <= CUSTOM_OFF && g_last_orig[ent] < get_gametime() )
+	{
+		g_Ent_Last_Origin[ent] = Torigin;
+		//g_Jump_lastdistance[ent] = distance;
+		g_last_orig[ent] = get_gametime()+1.0
+	}
 }
+
 
 stock NRS_set_animation(ent, sequence, bodyanimonly = 0 )
 {	
@@ -4168,13 +3990,8 @@ public logevent_round_end()
 }
 
 
-public native_create_npc(Float:fOriginX, Float:fOriginY, Float:fOriginZ, class_id)
+public native_create_npc(Float:fOrigin[3], class_id)
 {
-	new Float:fOrigin[3]
-	fOrigin[0] = fOriginX
-	fOrigin[1] = fOriginY
-	fOrigin[2] = fOriginZ
-	
 	return NRS_create_npc(fOrigin,class_id)
 }
 
@@ -4294,13 +4111,8 @@ public native_get_npc_classname_id(classname[])
 public native_get_npc_classum()
 	return g_classcount;
 
-public native_npc_timecall( caster, Float:fOriginX, Float:fOriginY, Float:fOriginZ, class_id, counter, itime )
+public native_npc_timecall( caster, Float:fOrigin[3], class_id, counter, itime )
 {
-	new Float:fOrigin[3]
-	fOrigin[0] = fOriginX
-	fOrigin[1] = fOriginY
-	fOrigin[2] = fOriginZ
-	
 	new ent = NRS_create_npc(fOrigin,class_id)
 	if ( !ent || ent > MAX_NPC )
 		return;
@@ -4493,205 +4305,277 @@ public register_npc(classname[])
 
 /// Path-finding algorithm.
 
-stock A_star_find(ent, Float:init_point[3], Float:End_Origin[3] )
+stock A_star_pathfinder(ent, Float:ent_origin[3], Float:End_Origin[3], Float:End_Way[][3])
 {
-	new Float:Start_Search_From_Here[3], Float:nice_point[3], Float:Temp_Distance
-	new wayOrigin[3], Float:wayfOrigin[3]
-	new Float:end[8][3]
-	new iOrigin[3], bool:FOUND, bool:ENDED, bool:USE_CUSTOM
-	new Float:min_dist = 99999.1, Float:dist
-	new j, i, p ,w, temp_w=-1, temp_p=-1
+	new i, checked = 0, Float:extra = 0.05, cost[8], diff[8], bool:finished = false, best_diff = 669999, best_way = 0, Float:Created_Way[max_way_points][3]
+	static Float:Explore_Origin[8][3], Float:Got_Origin[8][3]
 	
-	Start_Search_From_Here = End_Origin
-		
-	k = 0
-	for( i=0; i<g_total_ways; i++ )
-		for (p=0; p<MAX_POINTS; p++)
-		{
-			if (!g_ways[w][p][3] ) continue;
-			used_Way[w][p] = false
-		}
+	static Float:Start_Search_From_Here[3];
+	Start_Search_From_Here = ent_origin;
 	
-	g_temp_counter[0] = g_apoints_size[ent] = g_apoint_index[ent] = 0
-	
-	i = 80
-		
-	while(i)
+	if ( Check_Forward_Attack(ent, ent_origin, End_Origin, vector_distance(ent_origin, End_Origin)) || g_custom_npc[ent] == CUSTOM_HOTSEEK)
 	{
-		i--
-		if ( !USE_CUSTOM )
-		{
-			temp_w = -1
-			min_dist = 99999.1
-
-			for ( w=0; w<g_total_ways; w++ )
+		g_way_counter[ent] = 1
+		End_Way[0] = End_Origin
+		//End_Way[1] = End_Origin
+		return
+	}
+	/*if ( vector_distance(ent_origin, End_Origin) <= 150.0  || g_custom_npc[ent] == CUSTOM_HOTSEEK)
+	{
+		g_way_counter[ent] = 1
+		End_Way[0] = End_Origin
+		//End_Way[1] = End_Origin
+		return
+	}*/
+	
+	new bool:Broken_Point[8]
+			
+	//End_Origin[2] = 0.0
+	//ent_origin[2] = 0.0
+	
+	while ( !finished || checked >= (max_way_points-1) )
+	{
+		best_diff = 669999
+		
+		Explore_Origin[0][0] = 300.0*extra
+		Explore_Origin[0][1] = 0.0
+		Explore_Origin[0][2] = 0.0
+			
+		Explore_Origin[1][0] = 150.0*extra
+		Explore_Origin[1][1] = 150.0*extra
+		Explore_Origin[1][2] = 0.0
+			
+		Explore_Origin[2][0] = 0.0
+		Explore_Origin[2][1] = 300.0*extra
+		Explore_Origin[2][2] = 0.0
+			
+		Explore_Origin[3][0] = -150.0*extra
+		Explore_Origin[3][1] = -300.0*extra
+		Explore_Origin[3][2] = 0.0
+			
+		Explore_Origin[4][0] = -300.0*extra
+		Explore_Origin[4][1] = 0.0
+		Explore_Origin[4][2] = 0.0
+			
+		Explore_Origin[5][0] = -150.0*extra
+		Explore_Origin[5][1] = -150.0*extra
+		Explore_Origin[5][2] = 0.0
+			
+		Explore_Origin[6][0] = 0.0
+		Explore_Origin[6][1] = -150.0*extra
+		Explore_Origin[6][2] = 0.0
+		
+		Explore_Origin[7][0] = 150.0*extra
+		Explore_Origin[7][1] = -150.0*extra
+		Explore_Origin[7][2] = 0.0
+		
+		
+		for(i = 0; i < sizeof(Explore_Origin); i++)
+		{	
+			checked++
+			
+			Got_Origin[i] = Start_Search_From_Here
+			Got_Origin[i][0] += Explore_Origin[i][0];
+			Got_Origin[i][1] += Explore_Origin[i][1];
+			Got_Origin[i][2] += Explore_Origin[i][2];
+			
+			Broken_Point[i] = false
+			
+			/*if ( IsOutsideMap(Got_Origin[i]) )
 			{
-				for (p=0; p<MAX_POINTS; p++)
+				cost[i] = 10500;
+				Broken_Point[i] = true
+			}
+			
+			if ( !is_in_line_of_sight(i>0 ? Got_Origin[i-1] : ent_origin, Got_Origin[i], false) )
+			{
+				cost[ i ] = 10600;
+				Broken_Point[i] = true
+			}*/
+			
+			
+			/*
+			* New code ( 26.07.2012 - 00:22 )
+			*/
+			new Float:OriginAngle[3], Float:vTrace[3], Float:vTraceEnd[3], Float:hitOrigin[3], Float:Direction[3]
+
+			entity_get_vector(ent,EV_VEC_v_angle,OriginAngle) 
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aim(ent, 64.0, vTrace)
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]+25.0
+			new hitent=trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin)
+			new Float:got_distance = vector_distance(Got_Origin[i], hitOrigin)
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aim(ent, 45.0, vTrace)  
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]  
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]-45.0
+			trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin) 
+			new Float:got_distance_jump = vector_distance(Got_Origin[i],hitOrigin)
+			
+			
+			if( got_distance_jump<43.0 )
+			{ 
+				pev(ent, pev_velocity, Direction)
+				Direction[2]+= 1.0
+				set_pev(ent, pev_velocity, Direction)
+			}  
+			
+			if( hitent || got_distance<60.0 )
+			{
+				if ( hitent && !check_hitent(hitent) )
 				{
-					if (!g_ways[w][p][3] || used_Way[w][p]) continue;
-					wayOrigin[0] = g_ways[w][p][0];wayOrigin[1] = g_ways[w][p][1];wayOrigin[2] = g_ways[w][p][2];
-										
-					IVecFVec(wayOrigin, wayfOrigin)
-					
-					dist = vector_distance(wayfOrigin, init_point)
-					
-					if ( get_can_see(wayfOrigin, Start_Search_From_Here) )
-					{
-						if ( min_dist > dist )
-						{
-							min_dist = dist
-							temp_w = w;
-							temp_p = p;
-						}
-					}
+					cost[ i ] = 10600;
+					Broken_Point[i] = true
 				}
 			}
-			if ( temp_w > -1 )
+			
+			/*
+			* Left
+			*/
+			OriginAngle[0] = 0.0
+			OriginAngle[1] -= -150.0*extra
+			OriginAngle[2] = 0.0
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aimLeft(ent, 64.0, vTrace, extra)
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]+25.0
+			hitent=trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin)
+			got_distance = vector_distance(Got_Origin[i], hitOrigin)
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aimLeft(ent, 45.0, vTrace, extra)
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]  
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]-45.0
+			trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin) 
+			got_distance_jump = vector_distance(Got_Origin[i],hitOrigin)
+			
+			
+			if( got_distance_jump<43.0 )
+			{ 
+				pev(ent, pev_velocity, Direction)
+				Direction[1] += -1.0
+				set_pev(ent, pev_velocity, Direction)
+			}
+			
+			if( hitent || got_distance<60.0 )
 			{
-				wayOrigin[0] = g_ways[temp_w][temp_p][0];wayOrigin[1] = g_ways[temp_w][temp_p][1];wayOrigin[2] = g_ways[temp_w][temp_p][2];
-				IVecFVec(wayOrigin, wayfOrigin)
-				g_temp_points[0][g_temp_counter[0]] = wayfOrigin
-				g_temp_counter[0]++
-				used_Way[temp_w][temp_p] = true
-				Start_Search_From_Here = wayfOrigin
-				
-			}else USE_CUSTOM = true
+				if ( hitent && !check_hitent(hitent) )
+				{
+					cost[ i ] = 10600;
+					Broken_Point[i] = true
+				}
+			}
+			/*
+			* Right
+			*/
+			OriginAngle[0] = 0.0
+			OriginAngle[1] -= 300.0*extra
+			OriginAngle[2] = 0.0
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aimRight(ent, 64.0, vTrace, extra)
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]+25.0
+			hitent=trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin)
+			got_distance = vector_distance(Got_Origin[i], hitOrigin)
+			
+			vTrace[0] = floatcos( OriginAngle[1], degrees ) * 64.0 
+			vTrace[1] = floatsin( OriginAngle[1], degrees ) * 64.0 
+			vTrace[2] = floatsin( -OriginAngle[0], degrees ) * 64.0//nrs_velocity_by_aimRight(ent, 45.0, vTrace, extra)
+			vTraceEnd[0] = vTrace[0] + Got_Origin[i][0]  
+			vTraceEnd[1] = vTrace[1] + Got_Origin[i][1] 
+			vTraceEnd[2] = vTrace[2] + Got_Origin[i][2]-45.0
+			trace_line(ent, Got_Origin[i], vTraceEnd, hitOrigin) 
+			got_distance_jump = vector_distance(Got_Origin[i],hitOrigin)
+			
+			
+			if( got_distance_jump<43.0 )
+			{ 
+				pev(ent, pev_velocity, Direction)
+				Direction[1] += 1.0
+				set_pev(ent, pev_velocity, Direction)
+			}
+			
+			if( hitent || got_distance<60.0 )
+			{
+				if ( hitent && !check_hitent(hitent) )
+				{
+					cost[ i ] = 10600;
+					Broken_Point[i] = true
+				}
+			}
+			
+			
+			/*
+			* Done.
+			*/
+			
+			if ( i == 0 || i == 2 || i == 4 || i == 6 )
+				cost[i] += 10
+			else
+				cost[i] += 14
+			diff[i] = floatround(vector_distance(Got_Origin[i], End_Origin)) + (cost[i]);
+			
+			if ( vector_distance(Got_Origin[i], End_Origin) <= 150.0*extra )
+			{
+				finished = true
+			}
+		}
+		
+		for(i = 0; i < sizeof(Explore_Origin); i++)
+		{
+			if ( best_diff >= diff[i]  )
+			{
+				if ( !Broken_Point[i] )
+				{
+					best_diff = diff[i]
+					best_way = i;
+				}
+			}
+		}
+		
+		Start_Search_From_Here = Got_Origin[best_way]
+		new Float:got_dist = vector_distance(Start_Search_From_Here, End_Origin)
+		
+		if ( g_way_counter[ent] >= (max_way_points-1) || got_dist <= 150.0*extra)
+		{
+			for(i = 0; i < g_way_counter[ent]; i++)
+			{
+				End_Way[i] = Created_Way[g_way_counter[ent]-i]	
+				//bomb_led(End_Way[i]) 
+			}
+			finished = true
+			return;
 		}
 		else
 		{
-			min_dist = 99999.1
-			FOUND = false;
-			
-			for( j = 0; j < 7; j++)
-			{
-				
-				end[j] = Start_Search_From_Here
-				end[j][0] += Explore_Offset[j][0];
-				end[j][1] += Explore_Offset[j][1];
-				end[j][2] += Explore_Offset[j][2];
-				SetFloor(end[j])
-				end[j][2] += 32.0
-				
-				if (get_can_see(Start_Search_From_Here, end[j]) )
-				{
-					FVecIVec(end[j], iOrigin)
-					if ( Check_UnUsedINT(iOrigin) && Check_No_UnderWall(end[j] ) )
-					{
-						FOUND = true
-						dist = vector_distance(end[j], init_point)
-						
-						if (dist < 120.0 && get_can_see(end[j], init_point) )
-						{
-							//server_print("POINT(*) True end ( BEGINS : points=%i )!", g_temp_counter[0])
-							g_temp_counter[0]--
-							for ( new z = 0; z < g_temp_counter[0]; z++ )
-							{
-								if ( g_points_size[ent] == MAX_POINTS*40)
-								{
-									break
-								}
-								g_points[ent][g_points_size[ent]+g_apoints_size[ent]] = g_temp_points[0][g_temp_counter[0]-z]
-								//server_print("POINT(True end;) = %i|%i|%i", floatround(Start_Search_From_Here[0]), floatround(Start_Search_From_Here[1]), floatround(Start_Search_From_Here[2]))
-								g_apoints_size[ent]++
-							}
-								
-							ENDED = true
-							
-							return
-						}
-						else
-						{
-							if ( min_dist > dist )
-							{
-								min_dist = dist
-								Start_Search_From_Here = end[j]
-							}
-						}
-					}
-				}
-			}
-			
-			if ( FOUND )
-			{
-				g_temp_points[0][g_temp_counter[0]] = Start_Search_From_Here
-				g_temp_counter[0]++
-			} else USE_CUSTOM = false
+			g_way_counter[ent] += 1
+			Created_Way[g_way_counter[ent]] = Got_Origin[best_way]
 		}
+			
 	}
 	
-	g_temp_counter[0]--
-		
-	if ( ! ENDED )
+	for(i = 0; i < g_way_counter[ent]; i++)
 	{
-		for ( new z = 0; z <= g_temp_counter[0]; z++ )
-		{
-			if ( g_points_size[ent] == MAX_POINTS*40)
-			{
-				break
-			}
-			g_points[ent][g_apoints_size[ent]] = g_temp_points[0][g_temp_counter[0]-z]
-			g_apoints_size[ent]++
-		}
-		for(i = 0; i < g_way_counter[ent]; i++)
-		{
-			point[ent][i] = Created_Way[i]
-		}
-			
-		ENDED = true
+		End_Way[i] = Created_Way[g_way_counter[ent]-i]	
+		//bomb_led(End_Way[i]) 
 	}
 }
 
-stock check_distances(ent, Float:originPoint[3], Float:finalPoint[3], Float:finalTraceEnd[3], bool:angles = false)
-{
-	new Float:got_distance = vector_distance(originPoint, finalTraceEnd)
-	new Float:temp_disance = vector_distance(originPoint, finalPoint)
-	
-	//log_amx("Check_Dist: %i/%i + %i/%i", floatround(got_distance), floatround(1.5*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX]), floatround(got_distance), floatround(temp_disance))
-	
-	if (angles && (got_distance && got_distance <= 1.5*g_class_data[g_class_id[ent]][DATA_MIN_MAX_XY_MAX]))
-	{
-		return 0
-	}
-	if ( got_distance <  temp_disance )
-	{
-		return 0
-	}
-	
-	return 1
-}
-
-stock valid_point(Float:point[3])
-{
-	if ( point[0] == 0.0 && point[1] == 0.0 && point[2] == 0.0 ) return 0
-	return 1
-}
-
-stock Create_TE_BEAMPOINTS(Float:start[3], Float:end[3], iSprite, startFrame, frameRate, life, width, noise, red, green, blue, alpha, speed)
-{
-	new istart[3], iend[3]
-	FVecIVec(start, istart)
-	FVecIVec(end, iend)
-	message_begin( MSG_BROADCAST, SVC_TEMPENTITY )
-	write_byte( TE_BEAMPOINTS )
-	write_coord( istart[0] )
-	write_coord( istart[1] )
-	write_coord( istart[2] )
-	write_coord( iend[0] )
-	write_coord( iend[1] )
-	write_coord( iend[2] )
-	write_short( iSprite )			// model
-	write_byte( startFrame )		// start frame
-	write_byte( frameRate )			// framerate
-	write_byte( life )				// life
-	write_byte( width )				// width
-	write_byte( noise )				// noise
-	write_byte( red)				// red
-	write_byte( green )				// green
-	write_byte( blue )				// blue
-	write_byte( alpha )				// brightness
-	write_byte( speed )				// speed
-	message_end()
-}
 
 bool:check_hitent(ent)
 {
@@ -4761,7 +4645,7 @@ stock bool:is_hull_vacant(const Float:origin[3], hull,id)
 }
 
 
-/*stock nrs_velocity_by_aim(ent, Float:fDistance , Float:vReturn[3])
+stock nrs_velocity_by_aim(ent, Float:fDistance , Float:vReturn[3])
 {
 	new Float:vAngles[3] // plug in the view angles of the entity 
 	//new Float:vReturn[3] // to get out an origin fDistance away 
@@ -4798,7 +4682,7 @@ stock nrs_velocity_by_aimRight(ent, Float:fDistance , Float:vReturn[3], Float:ex
 	vReturn[0] = floatcos( vAngles[1], degrees ) * fDistance 
 	vReturn[1] = floatsin( vAngles[1], degrees ) * fDistance 
 	vReturn[2] = floatsin( -vAngles[0], degrees ) * fDistance
-}*/
+}
 
 public gib_death(Float:fOrigin[3]) // credits 2 <VeCo>
 {
